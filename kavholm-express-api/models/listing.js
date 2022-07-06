@@ -1,14 +1,22 @@
-const db = require("../db")
-const { BadRequestError, NotFoundError } = require("../utils/errors")
+const db = require("../db");
+const { BadRequestError, NotFoundError } = require("../utils/errors");
 
 class Listing {
   static async createListing({ newListing, user }) {
-    const requiredFields = ["location", "title", "description", "imageUrl"]
+    const requiredFields = [
+      "location",
+      "title",
+      "description",
+      "imageUrl",
+      "price",
+    ];
     requiredFields.forEach((field) => {
       if (!newListing?.hasOwnProperty(field)) {
-        throw new BadRequestError(`Missing required field - ${field} - in request body.`)
+        throw new BadRequestError(
+          `Missing required field - ${field} - in request body.`
+        );
       }
-    })
+    });
 
     const results = await db.query(
       `
@@ -39,9 +47,9 @@ class Listing {
         newListing.imageUrl3,
         newListing.price,
       ]
-    )
+    );
 
-    return results.rows[0]
+    return results.rows[0];
   }
 
   static async fetchListingById(listingId) {
@@ -69,13 +77,13 @@ class Listing {
       WHERE id = $1;
       `,
       [listingId]
-    )
+    );
 
-    const listing = results.rows[0]
+    const listing = results.rows[0];
 
-    if (listing?.title) return listing
+    if (listing?.title) return listing;
 
-    throw new NotFoundError("No listing found with that id.")
+    throw new NotFoundError("No listing found with that id.");
   }
 
   static async fetchAll() {
@@ -98,10 +106,10 @@ class Listing {
       FROM listings
       JOIN users ON users.id = listings.user_id;      
       `
-    )
+    );
 
-    return results.rows
+    return results.rows;
   }
 }
 
-module.exports = Listing
+module.exports = Listing;

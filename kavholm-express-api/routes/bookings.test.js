@@ -1,5 +1,5 @@
-const request = require("supertest")
-const app = require("../app")
+const request = require("supertest");
+const app = require("../app");
 
 const {
   commonBeforeAll,
@@ -8,27 +8,79 @@ const {
   commonAfterAll,
   testTokens,
   testListingIds,
-} = require("../tests/common")
+} = require("../tests/common");
 
-beforeAll(commonBeforeAll)
-beforeEach(commonBeforeEach)
-afterEach(commonAfterEach)
-afterAll(commonAfterAll)
+beforeAll(commonBeforeAll);
+beforeEach(commonBeforeEach);
+afterEach(commonAfterEach);
+afterAll(commonAfterAll);
+
+describe("POST /bookings/", () => {
+  test("Authed user can book a listing they don't own", async () => {
+    const listingId = testListingIds[0];
+    const data = {
+      newBooking: {
+        startDate: new Date("12-05-2021"),
+        endDate: new Date("12-07-2021"),
+        guests: 10,
+      },
+    };
+    const res = await request(app)
+      .post(`/bookings/listings/${listingId}/`)
+      .set("authorization", `Bearer ${testTokens.jloToken}`)
+      .send({ newBooking: data.newBooking });
+    expect(res.statusCode).toEqual(201);
+
+    const { booking } = res.body;
+
+    expect(booking).toEqual({
+      id: expect.any(Number),
+      startDate: new Date("12-05-2021"),
+      endDate: new Date("12-07-2021"),
+      paymentMethod: expect.any(String),
+      guests: 10,
+      username: "jlo",
+      listingId: listingId,
+      userId: expect.any(Number),
+      createdAt: expect.any(Date),
+      hostUsername: "lebron",
+      totalCost: "78623",
+    });
+  });
+
+  test("Throws a Bad Request error when user attempts to book their own listing", async () => {
+    const listingId = testListingIds[0];
+    const data = {
+      newBooking: {
+        startDate: new Date("12-05-2021"),
+        endDate: new Date("12-07-2021"),
+        guests: 10,
+      },
+    };
+    const res = await request(app)
+      .post(`/bookings/listings/:listingId`)
+      .set("authorization", `Bearer ${testTokens.lebronToken}`)
+      .send({ data });
+    expect(res.statusCode).toEqual(400);
+  });
+});
 
 /************************************** GET bookings/ */
 describe("GET /bookings/", () => {
   test("Authed user can fetch all bookings they've made", async () => {
-    const listingId = testListingIds[0]
-    const res = await request(app).get(`/bookings`).set("authorization", `Bearer ${testTokens.jloToken}`)
+    const listingId = testListingIds[0];
+    const res = await request(app)
+      .get(`/bookings`)
+      .set("authorization", `Bearer ${testTokens.jloToken}`);
 
-    expect(res.statusCode).toEqual(200)
+    expect(res.statusCode).toEqual(200);
 
-    const { bookings } = res.body
-    expect(bookings.length).toEqual(2)
+    const { bookings } = res.body;
+    expect(bookings.length).toEqual(2);
 
-    const firstBooking = bookings[bookings.length - 1]
+    const firstBooking = bookings[bookings.length - 1];
 
-    firstBooking.totalCost = Number(firstBooking.totalCost)
+    firstBooking.totalCost = Number(firstBooking.totalCost);
 
     expect(firstBooking).toEqual({
       id: expect.any(Number),
@@ -42,28 +94,30 @@ describe("GET /bookings/", () => {
       listingId: listingId,
       userId: expect.any(Number),
       createdAt: expect.any(String),
-    })
-  })
+    });
+  });
 
   test("Throws Unauthorized error when user is unauthenticated", async () => {
-    const res = await request(app).get(`/bookings/`)
-    expect(res.statusCode).toEqual(401)
-  })
-})
+    const res = await request(app).get(`/bookings/`);
+    expect(res.statusCode).toEqual(401);
+  });
+});
 
 /************************************** GET bookings/listings */
 describe("GET /bookings/listings", () => {
   test("Authed user can fetch all bookings for any listings they own", async () => {
-    const res = await request(app).get(`/bookings/listings`).set("authorization", `Bearer ${testTokens.lebronToken}`)
+    const res = await request(app)
+      .get(`/bookings/listings`)
+      .set("authorization", `Bearer ${testTokens.lebronToken}`);
 
-    expect(res.statusCode).toEqual(200)
+    expect(res.statusCode).toEqual(200);
 
-    const { bookings } = res.body
-    expect(bookings.length).toEqual(2)
+    const { bookings } = res.body;
+    expect(bookings.length).toEqual(2);
 
-    const firstBooking = bookings[bookings.length - 1]
+    const firstBooking = bookings[bookings.length - 1];
 
-    firstBooking.totalCost = Number(firstBooking.totalCost)
+    firstBooking.totalCost = Number(firstBooking.totalCost);
 
     expect(firstBooking).toEqual({
       id: expect.any(Number),
@@ -77,14 +131,14 @@ describe("GET /bookings/listings", () => {
       listingId: expect.any(Number),
       userId: expect.any(Number),
       createdAt: expect.any(String),
-    })
-  })
+    });
+  });
 
   test("Throws Unauthorized error when user is unauthenticated", async () => {
-    const res = await request(app).get(`/bookings/listings`)
-    expect(res.statusCode).toEqual(401)
-  })
-})
+    const res = await request(app).get(`/bookings/listings`);
+    expect(res.statusCode).toEqual(401);
+  });
+});
 
 /************************************** POST bookings/listings/:listingId */
 
